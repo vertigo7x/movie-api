@@ -1,0 +1,73 @@
+Please add the cURLs of your tests here:
+
+Linux / Mac:
+
+curl -X 'POST' \
+  'https://localhost:7629/Showtime' \
+  -H 'accept: */*' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "movieId": "tt0111161",
+  "sessionDate": "2023-09-24T11:39:26.684Z",
+  "auditoriumId": 1
+}'
+
+curl -X 'POST' \
+  'https://localhost:7629/Reservation' \
+  -H 'accept: */*' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "showtimeId": 2,
+  "auditoriumId": 1,
+  "seats": [
+    {
+      "row": 1,
+      "seatNumber": 1
+    }
+  ]
+}'
+
+curl -X 'POST' \
+  'https://localhost:7629/Payment' \
+  -H 'accept: */*' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "ticketId": "[REPLACE_WITH_PREVIOUS_TICKET_GUID]"
+}'
+
+
+Windows:
+
+curl -X 'POST' ^
+  'https://localhost:7629/Showtime' ^
+  -H 'accept: */*' ^
+  -H 'Content-Type: application/json' ^
+  -d '{
+  "movieId": "tt0111161",
+  "sessionDate": "2023-09-24T11:39:26.684Z",
+  "auditoriumId": 1
+}'
+
+curl -X 'POST' ^
+  'https://localhost:7629/Reservation' ^
+  -H 'accept: */*' ^
+  -H 'Content-Type: application/json' ^
+  -d '{
+  "showtimeId": 2,
+  "auditoriumId": 1,
+  "seats": [
+	{
+	  "row": 1,
+	  "seatNumber": 1
+	}
+  ]
+}'
+
+curl -X 'POST' ^
+  'https://localhost:7629/Payment' ^
+  -H 'accept: */*' ^
+  -H 'Content-Type: application/json' ^
+  -d '{
+  "ticketId": "[REPLACE_WITH_PREVIOUS_TICKET_GUID]"
+}'
+
