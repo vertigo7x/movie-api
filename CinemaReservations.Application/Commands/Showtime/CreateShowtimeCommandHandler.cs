@@ -42,9 +42,27 @@ namespace CinemaReservations.Application.Commands.Showtime
 
         public async Task<CreateShowtimeResponse> Handle(CreateShowtimeCommand request, CancellationToken cancellationToken)
         {
-            var movie = await GetMovieAsync(request.MovieId);
+            Movie movie;
+            movie = await GetMovieFromCache(request.MovieId);
+            if (movie == null)
+            {
+                _logger.LogInformation($"Movie not found in Cache, Storing in cache");
+                movie = await GetMovieFromExternalService(request.MovieId);
+                if (movie == null)
+                {
+                    _logger.LogError($"Movie not found in External Service");
+                    throw new MovieNotExistException($"Movie not found in External Service");
+                } else
+                {
+                    await StoreMovieInCache(request.MovieId, movie);
+                }
+            }
             var auditorium = await GetAuditoriumAsync(request.AuditoriumId);
-
+            if (auditorium == null)
+            {
+                _logger.LogError($"Auditorium with id {request.AuditoriumId} does not exist");
+                throw new AuditoriumNotExistException($"Auditorium with id {request.AuditoriumId} does not exist");
+            }
             var showtime = new Models.Showtime
             {
                 Movie = movie,
@@ -52,11 +70,9 @@ namespace CinemaReservations.Application.Commands.Showtime
                 Auditorium = auditorium,
             };
             var showtimeEntity = _mapper.Map<Models.Showtime, ShowtimeEntity>(showtime);
-
+            _logger.LogInformation($"Creating showtime");
             var createdShowtimeEntity = await _showtimesRepository.CreateShowtime(showtimeEntity, CancellationToken.None);
-
             var createdShowtime = _mapper.Map<ShowtimeEntity, Models.Showtime>(createdShowtimeEntity);
-
             return new CreateShowtimeResponse
             {
                 Id = createdShowtime.Id,
@@ -66,33 +82,41 @@ namespace CinemaReservations.Application.Commands.Showtime
             };
         }
 
-        private async Task<Movie> GetMovieAsync(string id)
+        private async Task StoreMovieInCache(string id, Movie movie)
+        {
+            await _redisService.SetMovie(id, JsonSerializer.Serialize(movie));
+        }
+
+        private async Task<Movie> GetMovieFromCache(string id)
         {
             var existingMovie = await _redisService.GetMovie(id);
             if (string.IsNullOrEmpty(existingMovie))
             {
-                var show = await _externalCinemaGrpcService.GetMovie(id);
-                if (show == null)
-                {
-                    _logger.LogError($"Movie not found in External Service");
-                    throw new MovieNotExistException($"Movie not found in External Service");
-                }
-                var movie = _mapper.Map<showResponse, Movie>(show);
-                await _redisService.SetMovie(movie.ImdbId, JsonSerializer.Serialize(movie));
-                return movie;
+                return null;
             }
             return JsonSerializer.Deserialize<Movie>(existingMovie);
+        }
+
+        private async Task<Movie> GetMovieFromExternalService(string id)
+        {
+            var show = await _externalCinemaGrpcService.GetMovie(id);
+            if (show == null)
+            {
+                return null;
+            }
+            var movie = _mapper.Map<showResponse, Movie>(show);
+            return movie;
         }
 
         private async Task<Auditorium> GetAuditoriumAsync(int auditoriumId)
         {
             var existingAuditorium = await _auditoriumsRepository.GetAsync(auditoriumId, CancellationToken.None);
-            if (existingAuditorium == null)
+            if (existingAuditorium != null)
             {
-                _logger.LogError($"Auditorium with id {auditoriumId} does not exist");
-                throw new AuditoriumNotExistException($"Auditorium with id {auditoriumId} does not exist");
+                return _mapper.Map<AuditoriumEntity, Auditorium>(existingAuditorium);
             }
-            return _mapper.Map<AuditoriumEntity, Auditorium>(existingAuditorium);
+            return null;
+            
         }
     }
 }
