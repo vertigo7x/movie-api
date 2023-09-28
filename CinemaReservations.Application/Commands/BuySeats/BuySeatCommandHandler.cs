@@ -49,10 +49,8 @@ namespace CinemaReservations.Application.Commands.BuySeats
                 throw new TicketAlreadyBoughtException($"Ticket with id {request.TicketId} is already bought");
             }
             // Check if ticket is expired
-            var creationDate = existingTicket.CreatedTime;
-            var now = DateTime.Now;
-            var diff = now - creationDate;
-            if (diff.TotalMinutes > _expirationTime)
+            var isTickedExpired = CheckIfTicketIsExpired(existingTicket);
+            if (isTickedExpired)
             {
                 _logger.LogError($"Ticket with id {request.TicketId} is expired");
                 throw new TicketExpiredException($"Ticket with id {request.TicketId} is expired");
@@ -67,6 +65,14 @@ namespace CinemaReservations.Application.Commands.BuySeats
                 Ticket = _mapper.Map<TicketEntity, Ticket>(updatedTicket)
             };
             return response;
+        }
+
+        private bool CheckIfTicketIsExpired(TicketEntity existingTicket)
+        {
+            var creationDate = existingTicket.CreatedTime;
+            var now = DateTime.Now;
+            var diff = now - creationDate;
+            return diff.TotalMinutes > _expirationTime;
         }
     }
 }

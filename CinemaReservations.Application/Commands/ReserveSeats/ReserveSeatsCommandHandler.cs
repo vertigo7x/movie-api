@@ -58,7 +58,7 @@ namespace CinemaReservations.Application.Commands.ReserveSeats
             }
             // Check if seats are consecutive
             var seats = request.Seats.Select(x => x.SeatNumber).ToArray<short>();
-            if (!AreConsecutive(seats))
+            if (!CheckIfSeatsAreConsecutive(seats))
             {
                 _logger.LogError($"Seats are not consecutive");
                 throw new SeatsNotConsecutiveException($"Seats are not consecutive");
@@ -153,7 +153,7 @@ namespace CinemaReservations.Application.Commands.ReserveSeats
         }
 
 
-        private static bool AreConsecutive(short[] numbers)
+        private static bool CheckIfSeatsAreConsecutive(short[] numbers)
         {
             Array.Sort(numbers);
             for (int i = 1; i < numbers.Length; i++)
